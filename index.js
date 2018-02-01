@@ -1,7 +1,11 @@
-let instance
+const Doorman = require('./lib/Doorman')
 
-function createInstance(rights=[], options={}) {
+let instance = null
 
+function createInstance (rights = [], options = {}) {
+  instance = new Doorman(rights, options)
+  return instance
 }
 
-module.export = instance || createInstance() 
+
+module.exports = instance || createInstance()
