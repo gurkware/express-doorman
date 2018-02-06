@@ -1,5 +1,6 @@
 describe('Doorman', () => {
   const Doorman = require('../lib/Doorman')
+  const MockExpressResponse = require('mock-express-response')
 
   describe('rightsMap', () => {
 
@@ -31,5 +32,50 @@ describe('Doorman', () => {
         '3': []
       })
     })
+  })
+
+  describe('hasRight', () => {
+    let rights, doorman, expressUtils
+
+    beforeEach(() => {
+      rights = [['1', '2'], ['2', '3'], ['a', 'b', '3'], ['b','c']]
+      doorman = new Doorman(rights)
+
+      expressUtils = {
+        res: new MockExpressResponse(),
+        req: {
+          user: {
+            rights: []
+          }
+        },
+        next: () => {}
+      }
+    })
+    it('call next if user has the needed right', () => {
+      spyOn(expressUtils, 'next')
+
+      expressUtils.req.user.rights = ['1']
+      doorman.hasRight({needed_right: '1'})(expressUtils.req, expressUtils.res, expressUtils.next)
+
+      expect(expressUtils.next).toHaveBeenCalled()
+    })
+    it('call next if user inherits the needed right', () => {
+      spyOn(expressUtils, 'next')
+
+      expressUtils.req.user.rights = ['1']
+      doorman.hasRight({needed_right: '3'})(expressUtils.req, expressUtils.res, expressUtils.next)
+
+      expect(expressUtils.next).toHaveBeenCalled()
+    })
+    it('should use user fail function if right is not given', () => {
+      spyOn(doorman.options, 'on_needed_right_fail')
+
+      expressUtils.req.user.rights = ['1']
+      doorman.hasRight({needed_right: 'a'})(expressUtils.req, expressUtils.res, expressUtils.next)
+
+      expect(doorman.options.on_needed_right_fail).toHaveBeenCalled()
+    })
+
+
   })
 })
