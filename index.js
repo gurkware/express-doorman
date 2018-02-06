@@ -1,3 +1,4 @@
 const Doorman = require('./lib/Doorman')
 
-let doorman = module.exports = new Doorman
+let doorman = new Doorman
+module.exports = doorman
