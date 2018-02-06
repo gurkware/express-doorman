@@ -11,6 +11,10 @@ describe('Doorman', () => {
       expect(() => {new Doorman([['1', '2'], ['2', '1']])})
         .toThrow(new Error('Cyclic rights, are not allowed'))
     })
+    it('should throw error on nested cyclic rights', () => {
+      expect(() => {new Doorman([['1', '2'], ['2', '3'], ['3', '1']])})
+        .toThrow(new Error('Cyclic rights, are not allowed'))
+    })
     it('should throw error on non array definition', () => {
       expect(() => {new Doorman(['1', ['2', '1']])})
         .toThrow(new Error('Rights have to be of Type Array'))
