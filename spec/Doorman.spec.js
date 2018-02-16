@@ -3,29 +3,32 @@ describe('Doorman', () => {
   const MockExpressResponse = require('mock-express-response')
 
   describe('rightsMap', () => {
-
+    let door
+    beforeEach(() => {
+      door = new Doorman()
+    })
     it('should give empty rights', () => {
-      let door = new Doorman([])
+      door.initialize([])
       expect(door.rightsMap).toEqual({})
     })
     it('should throw error on cyclic rights', () => {
-      expect(() => {new Doorman([['1', '2'], ['2', '1']])})
+      expect(() => {door.initialize([['1', '2'], ['2', '1']])})
         .toThrow(new Error('Cyclic rights, are not allowed'))
     })
     it('should throw error on nested cyclic rights', () => {
-      expect(() => {new Doorman([['1', '2'], ['2', '3'], ['3', '1']])})
+      expect(() => {door.initialize([['1', '2'], ['2', '3'], ['3', '1']])})
         .toThrow(new Error('Cyclic rights, are not allowed'))
     })
     it('should throw error on non array definition', () => {
-      expect(() => {new Doorman(['1', ['2', '1']])})
+      expect(() => {door.initialize(['1', ['2', '1']])})
         .toThrow(new Error('Rights have to be of Type Array'))
     })
     it('should throw error on non array definition', () => {
-      expect(() => {new Doorman([['2', '1'], ['2', '1']])})
+      expect(() => {door.initialize([['2', '1'], ['2', '1']])})
         .toThrow(new Error('Duplicate definition'))
     })
     it('should parse nesting', () => {
-      let door = new Doorman([['1', '2'], ['2', '3']])
+      door.initialize([['1', '2'], ['2', '3']])
       expect(door.rightsMap).toEqual({
         '1': ['2', '3'],
         '2': ['3'],
@@ -38,14 +41,25 @@ describe('Doorman', () => {
     let rights, doorman, expressUtils
 
     beforeEach(() => {
-      rights = [['1', '2'], ['2', '3'], ['a', 'b', '3'], ['b','c']]
-      doorman = new Doorman(rights)
+      rights = [['1', '2'], ['2', '3'], ['a', 'b', '3'], ['b', 'c']]
+      doorman = new Doorman()
+      doorman.initialize(rights)
 
       expressUtils = {
         res: new MockExpressResponse(),
         req: {
           user: {
+            id: 1,
             rights: []
+          },
+          entity: {
+            ownerId: 1,
+            groupMembers: [1, 2, 3, 4],
+            nested: {
+              nest: {
+                id: 1
+              }
+            }
           }
         },
         next: () => {}
@@ -76,6 +90,39 @@ describe('Doorman', () => {
       expect(doorman.options.on_needed_right_fail).toHaveBeenCalled()
     })
 
+    it('check if user is owner', () => {
+      spyOn(expressUtils, 'next')
+      spyOn(doorman.options, 'on_needed_right_fail')
+      doorman.hasRight({entity: 'entity', entity_id: 'ownerId'})(expressUtils.req, expressUtils.res, expressUtils.next)
+      expect(expressUtils.next).toHaveBeenCalled()
 
+      expressUtils.req.user.id = 2
+      doorman.hasRight({entity: 'entity', entity_id: 'ownerId'})(expressUtils.req, expressUtils.res, expressUtils.next)
+      expect(doorman.options.on_needed_right_fail).toHaveBeenCalled()
+
+    })
+    it('check if user is in array', () => {
+      spyOn(expressUtils, 'next')
+      spyOn(doorman.options, 'on_needed_right_fail')
+
+      doorman.hasRight({entity: 'entity', entity_id: 'groupMembers'})(expressUtils.req, expressUtils.res, expressUtils.next)
+      expect(expressUtils.next).toHaveBeenCalled()
+
+      expressUtils.req.user.id = 5
+      doorman.hasRight({entity: 'entity', entity_id: 'groupMembers'})(expressUtils.req, expressUtils.res, expressUtils.next)
+      expect(doorman.options.on_needed_right_fail).toHaveBeenCalled()
+
+    })
+    it('check nested user id', () => {
+      spyOn(expressUtils, 'next')
+      spyOn(doorman.options, 'on_needed_right_fail')
+
+      doorman.hasRight({entity: 'entity', entity_scope: 'nested.nest', entity_id: 'id'})(expressUtils.req, expressUtils.res, expressUtils.next)
+      expect(expressUtils.next).toHaveBeenCalled()
+
+      expressUtils.req.user.id = 5
+      doorman.hasRight({entity: 'entity', entity_scope: 'nested.nest', entity_id: 'id'})(expressUtils.req, expressUtils.res, expressUtils.next)
+      expect(doorman.options.on_needed_right_fail).toHaveBeenCalled()
+    })
   })
 })
