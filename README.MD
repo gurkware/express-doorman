@@ -70,6 +70,8 @@ and the default options
 
 **hasRight(_options_)** - Checks Route on given Options, calls on_right_needed_fail if check fails, calls next() on success
 
+**checkRight(_availableRights_, _neededRight_)** - Returns true if availableRights implement needed Right
+
 ### Options-Object
 
 | Key | Definition |
