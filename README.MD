@@ -43,7 +43,7 @@ app.put('/user', canEdit, controller)
 
 // custom reject handler
 
-const isAdmin doorman.hasRight({
+const isAdmin = doorman.hasRight({
     needed_right: 'ADMIN',
     on_needed_right_fail: (missingRight, req, res, next) => {
       req.flash('error', `Missing right ${missingRight}`)
